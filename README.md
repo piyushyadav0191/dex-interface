@@ -11,7 +11,7 @@ A token swapping interface with real-time order book and dynamic pricing.
 - Token Management
 
 ## Tech Stack
-- Next.js 13
+- Next.js 15
 - React
 - Ethers.js
 - Zustand
