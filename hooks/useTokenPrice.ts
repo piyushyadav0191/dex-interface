@@ -21,7 +21,7 @@ export const useTokenPrice = (
 
       try {
         setLoading(true);
-        // Mock price calculation based on token pairs
+        // mocking price calculation based on token pairs
         let basePrice;
         switch (`${fromToken.symbol}-${toToken.symbol}`) {
           case "ETH-USDC":
@@ -37,16 +37,13 @@ export const useTokenPrice = (
             basePrice = 1;
         }
 
-        // Calculate price impact based on order size
         const amountNum = parseFloat(amount);
         const impact = amountNum > 10 ? 0.02 : amountNum > 5 ? 0.01 : 0.005;
         setPriceImpact(impact * 100);
 
-        // Calculate slippage based on volatility
         const estimatedSlippage = 0.005; // 0.5%
         setSlippage(estimatedSlippage * 100);
 
-        // Apply price impact to base price
         const finalPrice = basePrice * (1 - impact);
         setPrice(finalPrice);
       } catch (err: any) {

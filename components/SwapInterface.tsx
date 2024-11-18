@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ArrowDownUp, Info, Settings } from "lucide-react";
+import { ArrowDownUp,  Settings, Wallet } from "lucide-react";
 import { TOKENS } from "@/constants/token";
 import { useWeb3Store } from "@/store/web3Store";
 import { useTokenPrice } from "@/hooks/useTokenPrice";
@@ -30,7 +30,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Tooltip,
@@ -38,20 +37,32 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 
 export function SwapInterface() {
-  const { account, provider } = useWeb3Store();
+  const { account, provider, connectWallet } = useWeb3Store();
+  const [tokens, setTokens] = useState<Token[]>(TOKENS);
   const [fromToken, setFromToken] = useState<Token>(TOKENS[0]);
   const [toToken, setToToken] = useState<Token>(TOKENS[1]);
   const [fromAmount, setFromAmount] = useState("");
   const [toAmount, setToAmount] = useState("");
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showTokenManager, setShowTokenManager] = useState(false);
+
   const {
     price,
     loading: priceLoading,
     priceImpact,
     slippage,
   } = useTokenPrice(fromToken, toToken, fromAmount);
+
   const { simulateTransaction, txState } = useTransaction();
 
   useEffect(() => {
@@ -65,18 +76,16 @@ export function SwapInterface() {
 
   const handleSwap = async () => {
     if (!account) {
-      alert("Please connect your wallet");
+      connectWallet();
       return;
     }
 
     try {
-      // Validate balance (mock check)
       const mockBalance = 100;
       if (parseFloat(fromAmount) > mockBalance) {
         throw new Error("Insufficient balance");
       }
 
-      // Show confirmation modal
       setShowConfirmation(true);
 
       // Simulate transaction
@@ -88,10 +97,7 @@ export function SwapInterface() {
         provider
       );
 
-      // Handle successful simulation
       console.log("Transaction details:", txDetails);
-
-      // In a real implementation, you would submit the transaction here
     } catch (error: any) {
       alert(`Swap failed: ${error.message}`);
     }
@@ -104,25 +110,47 @@ export function SwapInterface() {
     setToAmount(fromAmount);
   };
 
+  const addToken = (token: Token) => {
+    if (!tokens.some((t) => t.symbol === token.symbol)) {
+      setTokens([...tokens, token]);
+    }
+  };
+
+  const removeToken = (symbol: string) => {
+    const newTokens = tokens.filter((t) => t.symbol !== symbol);
+    setTokens(newTokens);
+
+    // reset tokens if selected tokens are removed
+    if (symbol === fromToken.symbol) setFromToken(newTokens[0]);
+    if (symbol === toToken.symbol) setToToken(newTokens[1]);
+  };
+
   return (
-    <Card className="w-full max-w-md mx-auto   text-card-foreground">
+    <Card className="w-full max-w-md mx-auto text-card-foreground">
       <CardHeader>
         <CardTitle className="flex justify-between items-center">
           <span>Swap</span>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Settings className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Swap settings</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <div className="flex items-center space-x-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowTokenManager(true)}
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Manage Tokens</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </CardTitle>
       </CardHeader>
+
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <label className="text-sm font-medium">From</label>
@@ -131,7 +159,7 @@ export function SwapInterface() {
               value={fromToken.symbol}
               onValueChange={(value) =>
                 setFromToken(
-                  TOKENS.find((t) => t.symbol === value) || TOKENS[0]
+                  tokens.find((t) => t.symbol === value) || tokens[0]
                 )
               }
             >
@@ -139,7 +167,7 @@ export function SwapInterface() {
                 <SelectValue placeholder="Select token" />
               </SelectTrigger>
               <SelectContent>
-                {TOKENS.map((token) => (
+                {tokens.map((token) => (
                   <SelectItem key={token.symbol} value={token.symbol}>
                     {token.symbol}
                   </SelectItem>
@@ -168,14 +196,14 @@ export function SwapInterface() {
             <Select
               value={toToken.symbol}
               onValueChange={(value) =>
-                setToToken(TOKENS.find((t) => t.symbol === value) || TOKENS[1])
+                setToToken(tokens.find((t) => t.symbol === value) || tokens[1])
               }
             >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select token" />
               </SelectTrigger>
               <SelectContent>
-                {TOKENS.map((token) => (
+                {tokens.map((token) => (
                   <SelectItem key={token.symbol} value={token.symbol}>
                     {token.symbol}
                   </SelectItem>
@@ -229,6 +257,7 @@ export function SwapInterface() {
           </div>
         )}
       </CardContent>
+
       <CardFooter>
         <Button
           className="w-full"
@@ -276,7 +305,7 @@ export function SwapInterface() {
             <Button
               onClick={() => {
                 setShowConfirmation(false);
-                // Additional confirmation logic would go here
+               
               }}
             >
               Confirm Swap
@@ -284,6 +313,44 @@ export function SwapInterface() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Drawer open={showTokenManager} onOpenChange={setShowTokenManager}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Token Management</DrawerTitle>
+          </DrawerHeader>
+          <div className="p-4">
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              <Input placeholder="Token Symbol" />
+              <Input placeholder="Token Name" />
+              <Input placeholder="Token Address" />
+            </div>
+            <Button className="w-full mb-4">Add Token</Button>
+            <div>
+              {tokens.map((token) => (
+                <div
+                  key={token.symbol}
+                  className="flex justify-between items-center bg-muted p-2 rounded mb-2"
+                >
+                  <span>
+                    {token.symbol} - {token.name}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeToken(token.symbol)}
+                  >
+                    <Wallet className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+          <DrawerFooter>
+            <DrawerClose>Close</DrawerClose>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </Card>
   );
 }

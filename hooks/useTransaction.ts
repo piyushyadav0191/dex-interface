@@ -23,15 +23,12 @@ export const useTransaction = () => {
     try {
       setTxState({ status: "pending", error: null });
 
-      // Mock gas estimation
       const gasPrice = await provider.getGasPrice();
       const estimatedGas = ethers.BigNumber.from("100000");
       const gasCost = gasPrice.mul(estimatedGas);
 
-      // Simulate transaction delay
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      // Mock successful transaction
       setTxState({ status: "success", error: null });
 
       return {

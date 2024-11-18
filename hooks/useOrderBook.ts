@@ -27,7 +27,6 @@ export const useOrderBook = () => {
     const fetchOrderBook = async () => {
       try {
         setLoading(true);
-        // Generate dynamic mock data
         setOrderBook(generateOrderBookData());
       } catch (err: any) {
         setError(err.message);

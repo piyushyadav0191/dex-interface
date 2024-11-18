@@ -1,20 +1,24 @@
-"use client"
+"use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Wallet } from "lucide-react";
 import { useWeb3Store } from "@/store/web3Store";
 import { Button } from "./ui/button";
+import { toast } from "sonner";
 
 export const WalletConnect = () => {
-  const { account, connectWallet, loading } = useWeb3Store();
+  const { account, connectWallet, loading, error } = useWeb3Store();
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
+  }, [error]);
 
   return (
     <div>
       {!account ? (
-        <Button
-          onClick={connectWallet}
-          disabled={loading}
-        >
+        <Button onClick={connectWallet} disabled={loading}>
           <Wallet className="w-4 h-4" />
           <span>{loading ? "Connecting..." : "Connect Wallet"}</span>
         </Button>
